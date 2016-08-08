@@ -1,4 +1,4 @@
-## WikiReading paper notes
+# WikiReading paper notes
 
 Daniel Hewlett, Alexandre Lacoste, Llion Jones, Illia Polosukhin, Andrew Fandrianto, Jay Han, Matthew Kelcey and David Berthelot, **Google Research**.
 
@@ -10,7 +10,9 @@ Daniel Hewlett, Alexandre Lacoste, Llion Jones, Illia Polosukhin, Andrew Fandria
 
 ![Screen Shot 2016-08-07 at 1.53.11 PM](img/wikireading/Screen Shot 2016-08-07 at 1.53.11 PM.png)
 
-#### WikiReading dataset
+
+
+## WikiReading dataset
 
 **Wikidata**: 16M items with 80M statements across 844 properties. Each statement is (property, value) tuple. E.g. item Paris has statement (country, France).
 
@@ -37,7 +39,9 @@ Daniel Hewlett, Alexandre Lacoste, Llion Jones, Illia Polosukhin, Andrew Fandria
 
 WIKIQA and NEWS both involve pointing to locations within the document.
 
-#### Methods: Classification
+
+
+## Methods: Classification
 
 In this case we have a finite number of possible answers, so there's an encoding of item,property to a vector **y** which goes into a Softmax classifier over the finite number of categories.
 
@@ -56,7 +60,7 @@ Note that this is kind of weird: the document is encoded separately from the que
 
 
 
-#### Methods: Answer Extraction with "RNN Labeler"
+## Methods: Answer Extraction with "RNN Labeler"
 
 quries that concern date of birth, mother, author etc have too many possible answers to be handled in a classification framework.
 
@@ -66,7 +70,7 @@ This approach is slightly gross, not end to end, and restricted to only predicti
 
 
 
-#### Methods: Answer Extraction with Sequence to Sequence
+## Methods: Answer Extraction with Sequence to Sequence
 
 - **Basic seq2seq**: Encode the (item,property) with one LSTM, decode the answer with another in a basic Sutskever et al. Seq2Seq manner. The word embedding is shared but LSTM dynamics aren't. The paper is unfortunately very vague here - how are the item and property encoded exactly? Would make sense to maybe encode each, then concatenate? Figure 1 seems to incidate the property is read first and the document next.
 - **Placeholder seq2seq**: An extension inspired by Luong et al. 2015 / Hermann et al. 2015, where out of vocabulary (OOV) words are replaced at random by one of finite number of placeholder vectors. The softmax word classifier is similarily extended to contain these placeholder words. Just a note: this is really *weird*, since the training has to learn across an entire cross product of placeholder replacements. It feels wrong, but I also can't come up with anything much better.=, except for:
@@ -77,7 +81,7 @@ This approach is slightly gross, not end to end, and restricted to only predicti
 
 One more note: these models are suspicious in how lazily they encode the (item, property). It seems they read the property first, and then they read the item for many next time steps, likely nearly forgetting the property by the end. Wouldn't it be much more sensible to use very simple attention here, or "plug in" the property at each time step, or at the last time step etc… many other easy and sensible possibilities here.
 
-#### Experiements
+## Experiements
 
 **Eval criterion**: Use Mean F1-score (harmonic mean of precision and recall) due to multiple possible answers; this measures "degree of overlap" between predicted answer and true answer. Details are a bit sparse here, do they segment multiple answers with e.g. a comma? Since most questions in the dataset have a single answer, F1-score ~= accuracy.
 
@@ -102,7 +106,7 @@ One more note: these models are suspicious in how lazily they encode the (item, 
 
 **No attention fancy models for seq2seq**; wish these experiments were included. Would expect an additional bump, as is the case in the categorical setting.
 
-#### Conclusions
+## Conclusions
 
 Lets push fully end-to-end character rnn models further. 
 
