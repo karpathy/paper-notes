@@ -10,7 +10,7 @@ Suppose you're given a single example of some class and would like to label it i
 
 - **Observation 1**: a standard approach might be to train an Exemplar SVM for this one (or few) examples vs. all the other training examples - i.e. a linear classifier. But this requires optimization.
 - **Observation 2:** known non-parameteric alternatives (e.g. k-Nearest Neighbor) don't suffer from this problem. E.g. I could immediately use a Nearest Neighbor to classify the new class without having to do any optimization whatsoever. However, NN is gross because it depends on an (arbitrarily-chosen) metric, e.g. L2 distance. Ew.
-- **Core idea**: lets train a fully end-to-end nearest neighbor classifer!![Screen Shot 2016-08-07 at 10.08.44 PM](img/matching_networks/Screen Shot 2016-08-07 at 10.08.44 PM.png)
+- **Core idea**: lets train a fully end-to-end nearest neighbor classifer!![Screen Shot 2016-08-07 at 10.08.44 PM](/img/matching_networks/Screen%20Shot%202016-08-07%20at%2010.08.44%20PM.png)
 
 ## The training protocol
 
@@ -25,23 +25,23 @@ The idea on high level is clear but the writing here is a bit unclear on details
 
 ## The model
 
-I find the paper's model description slightly wordy and unclear, but basically we're building a **differentiable nearest neighbor++**. The output \hat{y} for a test example \hat{x} is computed very similar to what you might see in Nearest Neighbors:![Screen Shot 2016-08-07 at 11.14.26 PM](img/matching_networks/Screen Shot 2016-08-07 at 11.14.26 PM.png)
+I find the paper's model description slightly wordy and unclear, but basically we're building a **differentiable nearest neighbor++**. The output \hat{y} for a test example \hat{x} is computed very similar to what you might see in Nearest Neighbors:![Screen Shot 2016-08-07 at 11.14.26 PM](img/matching_networks/Screen%20Shot%202016-08-07%20at%2011.14.26%20PM.png)
 where **a** acts as a kernel, computing the extent to which \hat{x} is similar to a training example x_i, and then the labels from the training examples (y_i) are weight-blended together accordingly. The paper doesn't mention this but I assume for classification y_i would presumbly be one-hot vectors.
 
 Now, we're going to embed both the training examples x_i and the test example \hat{x}, and we'll interpret their inner products (or here a cosine similarity) as the "match", and pass that through a softmax to get normalized mixing weights so they add up to 1. No surprises here, this is quite natural:
 
-![Screen Shot 2016-08-07 at 11.20.29 PM](img/matching_networks/Screen Shot 2016-08-07 at 11.20.29 PM.png)
+![Screen Shot 2016-08-07 at 11.20.29 PM](img/matching_networks/Screen%20Shot%202016-08-07%20at%2011.20.29%20PM.png)
 Here **c()** is cosine distance, which I presume is implemented by normalizing the two input vectors to have unit L2 norm and taking a dot product. I assume the authors tried skipping the normalization too and it did worse? Anyway, now all that's left to define is the function **f** (i.e. how do we embed the test example into a vector) and the function **g** (i.e. how do we embed each training example into a vector?).
 
 **Embedding the training examples.** This (the function **g**) is a bidirectional LSTM over the examples:
 
- ![Screen Shot 2016-08-07 at 11.57.10 PM](img/matching_networks/Screen Shot 2016-08-07 at 11.57.10 PM.png)
+ ![Screen Shot 2016-08-07 at 11.57.10 PM](img/matching_networks/Screen%20Shot%202016-08-07%20at%2011.57.10%20PM.png)
 
 i.e. encoding of i'th example x_i is a function of its "raw" embedding g'(x_i) and the embedding of its friends, communicated through the bidirectional network's hidden states. i.e. each training example is a function of not just itself but all of its friends in the set. This is part of the ++ above, because in a normal nearest neighbor you wouldn't change the representation of an example as a function of the other data points in the training set.
 
 It's odd that the **order** is not mentioned, I assume it's random? This is a bit gross because order matters to a bidirectional LSTM; you'd get different embeddings if you permute the examples. 
 
-**Embedding the test example.** This (the function **f**) is a an LSTM that processes for a fixed amount (K time steps) and at each point also *attends* over the examples in the training set. The encoding is the last hidden state of the LSTM. Again, this way we're allowing the network to change its encoding of the test example as a function of the training examples. Nifty: ![Screen Shot 2016-08-08 at 12.11.15 AM](img/matching_networks/Screen Shot 2016-08-08 at 12.11.15 AM.png)
+**Embedding the test example.** This (the function **f**) is a an LSTM that processes for a fixed amount (K time steps) and at each point also *attends* over the examples in the training set. The encoding is the last hidden state of the LSTM. Again, this way we're allowing the network to change its encoding of the test example as a function of the training examples. Nifty: ![Screen Shot 2016-08-08 at 12.11.15 AM](img/matching_networks/Screen%20Shot%202016-08-08%20at%2012.11.15%20AM.png)
 
 That looks scary at first but it's really just a vanilla LSTM with attention where the input at each time step is constant (f'(\hat{x}), an encoding of the test example all by itself) and the hidden state is a function of previous hidden state but also a concatenated readout vector **r**, which we obtain by attending over the encoded training examples (encoded with **g** from above).
 
@@ -63,13 +63,13 @@ Oh and I assume there is a typo in equation (5), it should say r_k = … without
 
 ### Omniglot experiments 
 
-### ![Screen Shot 2016-08-08 at 10.21.45 AM](img/matching_networks/Screen Shot 2016-08-08 at 10.21.45 AM.png)
+### ![Screen Shot 2016-08-08 at 10.21.45 AM](img/matching_networks/Screen%20Shot%202016-08-08%20at%2010.21.45%20AM.png)
 
 Omniglot of [Lake et al. [14]](http://www.cs.toronto.edu/~rsalakhu/papers/LakeEtAl2015Science.pdf) is a MNIST-like scribbles dataset with 1623 characters with 20 examples each.
 
 Image encoder is a CNN with 4 modules of [3x3 CONV 64 filters, batchnorm, ReLU, 2x2 max pool]. The original image is claimed to be so resized from original 28x28 to 1x1x64, which doesn't make sense because factor of 2 downsampling 4 times is reduction of 16, and 28/16 is a non-integer >1. I'm assuming they use VALID convs?
 
-Results: ![Screen Shot 2016-08-08 at 10.27.46 AM](img/matching_networks/Screen Shot 2016-08-08 at 10.27.46 AM.png)
+Results: ![Screen Shot 2016-08-08 at 10.27.46 AM](img/matching_networks/Screen%20Shot%202016-08-08%20at%2010.27.46%20AM.png)
 
 Matching nets do best. Fully Conditional Embeddings (FCE) by which I mean they the "Full Context Embeddings" of Section 2.1.2 instead are not used here, mentioned to not work much better. Finetuning helps a bit on baselines but not with Matching nets (weird).
 
